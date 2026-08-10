@@ -1,0 +1,47 @@
+<script>
+  let revealObserver: IntersectionObserver | undefined;
+  let removeParallax: (() => void) | undefined;
+
+  function setupPageMotion() {
+    revealObserver?.disconnect();
+    removeParallax?.();
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const revealItems = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
+
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      revealItems.forEach((item) => item.dataset.visible = 'true');
+    } else {
+      revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          (entry.target as HTMLElement).dataset.visible = 'true';
+          revealObserver?.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+      revealItems.forEach((item) => revealObserver?.observe(item));
+    }
+
+    const parallax = document.querySelector<HTMLElement>('[data-planet-parallax]');
+    if (!parallax || reducedMotion || window.matchMedia('(max-width: 800px)').matches) return;
+
+    let frame = 0;
+    const update = (event: PointerEvent) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const x = (event.clientX / window.innerWidth - 0.5) * 12;
+        const y = (event.clientY / window.innerHeight - 0.5) * 8;
+        parallax.style.setProperty('--planet-x', `${x}px`);
+        parallax.style.setProperty('--planet-y', `${y}px`);
+      });
+    };
+    window.addEventListener('pointermove', update, { passive: true });
+    removeParallax = () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('pointermove', update);
+    };
+  }
+
+  document.addEventListener('astro:page-load', setupPageMotion);
+  setupPageMotion();
+</script>

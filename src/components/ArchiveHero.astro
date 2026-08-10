@@ -1,0 +1,26 @@
+---
+import { Image } from 'astro:assets';
+import moonArchive from '../assets/celestial/moon-archive.png';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+<section class="archive-hero">
+  <div class="archive-media" aria-hidden="true" data-planet-parallax>
+    <Image src={moonArchive} alt="" widths={[960, 1440, 1920]} sizes="100vw" format="webp" quality={82} loading="eager" />
+    <svg class="archive-orbit" viewBox="0 0 900 420" focusable="false">
+      <path d="M120 332C268 82 654 46 848 186" />
+      <circle cx="326" cy="152" r="4" class="orbit-dot orbit-dot--light" />
+      <circle cx="760" cy="128" r="4" class="orbit-dot orbit-dot--accent" />
+    </svg>
+  </div>
+  <div class="shell archive-hero__content" data-reveal>
+    <h1>{title}</h1>
+    <p>{description}</p>
+    <div class="archive-hero__controls"><slot /></div>
+  </div>
+</section>
