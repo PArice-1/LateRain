@@ -3,6 +3,7 @@ import {
   getLatestProjectCategories,
   getRelatedPosts,
   readingMinutes,
+  resolvePostTag,
   resolveProjectCategory,
   sortByDateDesc,
 } from '../src/lib/content';
@@ -60,5 +61,13 @@ describe('content helpers', () => {
     expect(resolveProjectCategory('Agent', categories)).toBe('Agent');
     expect(resolveProjectCategory('Unknown', categories)).toBe('全部');
     expect(resolveProjectCategory(null, categories)).toBe('全部');
+  });
+
+  it('falls back to all posts when a requested tag is unavailable', () => {
+    const tags = ['Python', '笔记'];
+
+    expect(resolvePostTag('Python', tags)).toBe('Python');
+    expect(resolvePostTag('Unknown', tags)).toBe('全部');
+    expect(resolvePostTag(null, tags)).toBe('全部');
   });
 });

@@ -1,5 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content';
+import { Image } from 'astro:assets';
+import planetHero from '../../assets/celestial/planet-hero.png';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { formatDate, getRelatedPosts, readingMinutes, sortByDateDesc } from '../../lib/content';
 import { withBase } from '../../lib/urls';
@@ -10,22 +12,92 @@ export async function getStaticPaths() {
 }
 const { post, posts } = Astro.props;
 const { Content, headings } = await render(post);
+const tocHeadings = headings.filter((heading) => heading.depth <= 2);
 const position = posts.findIndex((item) => item.id === post.id);
 const previous = posts[position + 1];
 const next = posts[position - 1];
 const related = getRelatedPosts(posts, post);
 ---
 <BaseLayout title={`${post.data.title} — LateRain`} description={post.data.description}>
-  <div class="progress" id="reading-progress"></div>
-  <article class="article"><header class="article-header"><div class="tag-list">{post.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div><h1>{post.data.title}</h1><p class="lead">{post.data.description}</p><p class="meta">{formatDate(post.data.publishDate)} · {readingMinutes(post.body ?? '')} 分钟阅读</p></header>
-    {headings.length > 0 && <nav class="tag-list" aria-label="文章目录">{headings.filter((heading) => heading.depth <= 2).map((heading) => <a class="tag" href={`#${heading.slug}`}>{heading.text}</a>)}</nav>}
-    <div class="prose"><Content /></div>
-    {related.length > 0 && <section class="section"><div class="section-title"><h2>继续阅读</h2></div>{related.map((item) => <p><a class="text-link" href={withBase(`posts/${item.id}`)}>{item.data.title} <span class="arrow">→</span></a></p>)}</section>}
-    <nav class="article-nav" aria-label="文章翻页"><span>{previous && <a class="text-link" href={withBase(`posts/${previous.id}`)}>← {previous.data.title}</a>}</span><span>{next && <a class="text-link" href={withBase(`posts/${next.id}`)}>{next.data.title} →</a>}</span></nav>
-  </article>
+  <div class="progress" id="reading-progress" aria-hidden="true"></div>
+  <div class="article-shell" id="article-shell">
+    <div class="article-cosmos" aria-hidden="true">
+      <Image src={planetHero} alt="" widths={[960, 1440]} sizes="70vw" format="webp" quality={78} loading="eager" />
+    </div>
+
+    {tocHeadings.length > 0 ? (
+      <nav class="article-toc" aria-label="文章目录">
+        <h2>目录</h2>
+        <div>{tocHeadings.map((heading) => <a href={`#${heading.slug}`} data-toc-link={heading.slug}>{heading.text}</a>)}</div>
+      </nav>
+    ) : <div></div>}
+
+    <article class="article" data-reveal>
+      <header class="article-header">
+        <div class="tag-list">{post.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div>
+        <h1>{post.data.title}</h1>
+        <p class="lead">{post.data.description}</p>
+        <p class="meta">{formatDate(post.data.publishDate)} · {readingMinutes(post.body ?? '')} 分钟阅读</p>
+      </header>
+      <div class="prose"><Content /></div>
+      <nav class="article-nav" aria-label="文章翻页">
+        <span>{previous && <a class="text-link" href={withBase(`posts/${previous.id}`)}>← {previous.data.title}</a>}</span>
+        <span>{next && <a class="text-link" href={withBase(`posts/${next.id}`)}>{next.data.title} →</a>}</span>
+      </nav>
+    </article>
+
+    {related.length > 0 ? (
+      <aside class="article-related" aria-label="继续阅读">
+        <h2>继续阅读</h2>
+        {related.map((item) => <p><a href={withBase(`posts/${item.id}`)}>{item.data.title} <span class="arrow">→</span></a></p>)}
+      </aside>
+    ) : <div></div>}
+  </div>
 </BaseLayout>
+
 <script>
-  const bar = document.querySelector<HTMLElement>('#reading-progress');
-  const updateProgress = () => { const scrollable = document.documentElement.scrollHeight - window.innerHeight; if (bar) bar.style.width = `${scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0}%`; };
-  updateProgress(); window.addEventListener('scroll', updateProgress, { passive: true });
+  import { clampReadingProgress } from '../../lib/ui';
+
+  let headingObserver: IntersectionObserver | undefined;
+  let removeProgressListener: (() => void) | undefined;
+
+  function setupArticleReading() {
+    headingObserver?.disconnect();
+    removeProgressListener?.();
+
+    const shell = document.querySelector<HTMLElement>('#article-shell');
+    const progress = document.querySelector<HTMLElement>('#reading-progress');
+    if (!shell || !progress) return;
+
+    let frame = 0;
+    const updateProgress = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        progress.style.width = `${clampReadingProgress(window.scrollY, scrollable)}%`;
+      });
+    };
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress();
+    removeProgressListener = () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', updateProgress);
+    };
+
+    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+    const headings = tocLinks
+      .map((link) => document.getElementById(link.dataset.tocLink ?? ''))
+      .filter((heading): heading is HTMLElement => Boolean(heading));
+    if (!headings.length || !('IntersectionObserver' in window)) return;
+
+    headingObserver = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top)[0];
+      if (!visible) return;
+      tocLinks.forEach((link) => link.setAttribute('aria-current', String(link.dataset.tocLink === visible.target.id)));
+    }, { rootMargin: '-18% 0px -68% 0px', threshold: 0 });
+    headings.forEach((heading) => headingObserver?.observe(heading));
+  }
+
+  document.addEventListener('astro:page-load', setupArticleReading);
+  setupArticleReading();
 </script>

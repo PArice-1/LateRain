@@ -21,6 +21,10 @@ export function resolveProjectCategory(requestedCategory: string | null, categor
   return requestedCategory && categories.includes(requestedCategory) ? requestedCategory : '全部';
 }
 
+export function resolvePostTag(requestedTag: string | null, tags: string[]): string {
+  return requestedTag && tags.includes(requestedTag) ? requestedTag : '全部';
+}
+
 export function getRelatedPosts<T extends TaggedEntry>(posts: T[], current: T, limit = 2): T[] {
   return [...posts]
     .filter((post) => post.id !== current.id)

@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import ArchiveHero from '../../components/ArchiveHero.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { formatDate, readingMinutes, sortByDateDesc } from '../../lib/content';
 import { withBase } from '../../lib/urls';
@@ -8,24 +9,86 @@ const posts = sortByDateDesc((await getCollection('posts')).filter((post) => !po
 const tags = [...new Set(posts.flatMap((post) => post.data.tags))];
 ---
 <BaseLayout title="文章 — LateRain" description="技术文章、项目复盘与思考。">
-  <section class="shell page-intro"><h1>文章</h1><p>把项目中的问题、判断和过程，整理成可回看的文字。</p></section>
-  <section class="shell content-list">
-    <div class="filters" aria-label="按标签筛选文章"><button type="button" class="filter" data-tag="全部" aria-pressed="true">全部</button>{tags.map((tag) => <button type="button" class="filter" data-tag={tag} aria-pressed="false">{tag}</button>)}</div>
-    <div id="post-list">
-      {posts.map((post) => <article class="post-row" data-tags={post.data.tags.join('|')}><div><h3><a href={withBase(`posts/${post.id}`)}>{post.data.title}</a></h3><p>{post.data.description}</p><div class="tag-list">{post.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div></div><span class="meta">{formatDate(post.data.publishDate)} · {readingMinutes(post.body ?? '')} 分钟</span></article>)}
+  <ArchiveHero title="文章" description="把项目中的问题、判断和过程，整理成可回看的文字。">
+    <div class="filters" aria-label="按标签筛选文章">
+      <button type="button" class="filter" data-tag="全部" aria-pressed="true">全部</button>
+      {tags.map((tag) => <button type="button" class="filter" data-tag={tag} aria-pressed="false">{tag}</button>)}
     </div>
+  </ArchiveHero>
+
+  <section class="shell post-index-list" id="post-list" aria-live="polite">
+    {posts.map((post) => (
+      <article class="post-index-row" data-tags={post.data.tags.join('|')} data-reveal>
+        <div class="post-index-meta">
+          <div>{formatDate(post.data.publishDate)}</div>
+          <div>{readingMinutes(post.body ?? '')} 分钟</div>
+        </div>
+        <div class="post-index-main">
+          <h2><a href={withBase(`posts/${post.id}`)}>{post.data.title}</a></h2>
+          <p>{post.data.description}</p>
+          <div class="tag-list">{post.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div>
+        </div>
+        <a class="post-index-arrow" href={withBase(`posts/${post.id}`)} aria-label={`阅读 ${post.data.title}`}>→</a>
+      </article>
+    ))}
     <p id="empty-posts" class="empty" hidden>该标签下暂时还没有文章。</p>
   </section>
 </BaseLayout>
+
 <script>
-  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tag]'));
-  const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-tags]'));
-  const empty = document.querySelector<HTMLElement>('#empty-posts');
-  buttons.forEach((button) => button.addEventListener('click', () => {
-    const tag = button.dataset.tag;
-    let visible = 0;
-    rows.forEach((row) => { const matches = tag === '全部' || row.dataset.tags?.split('|').includes(tag ?? ''); row.hidden = !matches; if (matches) visible += 1; });
-    buttons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
-    if (empty) empty.hidden = visible !== 0;
-  }));
+  import { resolvePostTag } from '../../lib/content';
+
+  function setupPostFilters() {
+    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tag]'));
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-tags]'));
+    const list = document.querySelector<HTMLElement>('#post-list');
+    const empty = document.querySelector<HTMLElement>('#empty-posts');
+    if (!buttons.length || !list || list.dataset.ready === 'true') return;
+
+    const tags = buttons.map((button) => button.dataset.tag).filter((tag): tag is string => Boolean(tag));
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const applyTag = async (tag: string, updateUrl: boolean, animate = true) => {
+      list.classList.add('is-filtering');
+      const matches = rows.filter((row) => tag === '全部' || row.dataset.tags?.split('|').includes(tag));
+      const hiddenRows = rows.filter((row) => !matches.includes(row) && !row.hidden);
+
+      if (animate && !reducedMotion) {
+        await Promise.all(hiddenRows.map((row) => row.animate(
+          [{ opacity: 1, transform: 'translateX(0)' }, { opacity: 0, transform: 'translateX(-12px)' }],
+          { duration: 180, easing: 'ease-in', fill: 'forwards' },
+        ).finished));
+      }
+
+      rows.forEach((row) => row.hidden = !matches.includes(row));
+      matches.forEach((row) => {
+        row.getAnimations().forEach((animation) => animation.cancel());
+        if (animate && !reducedMotion) row.animate(
+          [{ opacity: 0, transform: 'translateX(12px)' }, { opacity: 1, transform: 'translateX(0)' }],
+          { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' },
+        );
+      });
+      buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.tag === tag)));
+      if (empty) empty.hidden = matches.length !== 0;
+
+      if (updateUrl) {
+        const url = new URL(window.location.href);
+        if (tag === '全部') url.searchParams.delete('tag');
+        else url.searchParams.set('tag', tag);
+        window.history.replaceState(null, '', url);
+      }
+      list.classList.remove('is-filtering');
+    };
+
+    buttons.forEach((button) => button.addEventListener('click', () => {
+      void applyTag(resolvePostTag(button.dataset.tag ?? null, tags), true);
+    }));
+    list.dataset.ready = 'true';
+
+    const requestedTag = new URLSearchParams(window.location.search).get('tag');
+    void applyTag(resolvePostTag(requestedTag, tags), false, false);
+  }
+
+  document.addEventListener('astro:page-load', setupPostFilters);
+  setupPostFilters();
 </script>
