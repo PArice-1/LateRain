@@ -3,3 +3,6 @@ dist/
 .astro/
 coverage/
 .env
+AGENTS.md
+spc/
+example
