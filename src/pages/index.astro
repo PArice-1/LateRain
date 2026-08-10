@@ -11,8 +11,8 @@ const allProjects = await getCollection('projects');
 const projects = sortByDateDesc(allProjects.filter((project) => project.data.featured)).slice(0, 3);
 const orbitCategories = getLatestProjectCategories(allProjects);
 const posts = sortByDateDesc((await getCollection('posts')).filter((post) => !post.data.draft)).slice(0, 3);
-const baseUrl = withBase();
 const fallbackQuote = quotes[0];
+const randomPostUrls = posts.map((post) => withBase(`posts/${post.id}`));
 const orbitNodes = [
   { x: 300, y: 130 },
   { x: 655, y: 92 },
@@ -98,7 +98,7 @@ const orbitNodes = [
           </article>
         ))}
       </div>
-      <p><a class="text-link" id="random-post" href={withBase('posts')} data-posts={JSON.stringify(posts.map((post) => post.id))} data-base={baseUrl}>随机探索 <span class="arrow">→</span></a></p>
+      <p><a class="text-link" id="random-post" href={withBase('posts')} data-posts={JSON.stringify(randomPostUrls)}>随机探索 <span class="arrow">→</span></a></p>
     </div>
   </section>
 </BaseLayout>
@@ -111,7 +111,8 @@ const orbitNodes = [
     if (quoteElement) {
       try {
         const quotePool = JSON.parse(quoteElement.dataset.quotes ?? '[]') as Quote[];
-        const storedIndex = Number(sessionStorage.getItem('home-quote-index'));
+        const storedValue = sessionStorage.getItem('home-quote-index');
+        const storedIndex = storedValue === null ? Number.NaN : Number(storedValue);
         const previousIndex = Number.isInteger(storedIndex) ? storedIndex : null;
         const index = selectQuoteIndex(quotePool.length, previousIndex);
         const quote = quotePool[index];
@@ -132,11 +133,10 @@ const orbitNodes = [
     if (randomPost && randomPost.dataset.ready !== 'true') {
       randomPost.dataset.ready = 'true';
       randomPost.addEventListener('click', (event) => {
-        const postIds = JSON.parse(randomPost.dataset.posts ?? '[]') as string[];
-        if (!postIds.length) return;
+        const postUrls = JSON.parse(randomPost.dataset.posts ?? '[]') as string[];
+        if (!postUrls.length) return;
         event.preventDefault();
-        const post = postIds[Math.floor(Math.random() * postIds.length)];
-        window.location.href = `${randomPost.dataset.base ?? '/'}posts/${post}`;
+        window.location.href = postUrls[Math.floor(Math.random() * postUrls.length)];
       });
     }
   }

@@ -18,10 +18,10 @@ export const quotes: Quote[] = [
   { text: 'I am the master of my fate, I am the captain of my soul.', lang: 'en', author: 'William Ernest Henley', source: 'Invictus' },
   { text: 'The readiness is all.', lang: 'en', author: 'William Shakespeare', source: 'Hamlet' },
   { text: 'Our doubts are traitors, and make us lose the good we oft might win.', lang: 'en', author: 'William Shakespeare', source: 'Measure for Measure' },
-  { text: 'Nothing great was ever achieved without enthusiasm.', lang: 'en', author: 'Ralph Waldo Emerson', source: 'Essays: First Series' },
+  { text: 'Nothing great was ever achieved without enthusiasm.', lang: 'en', author: 'Ralph Waldo Emerson', source: 'Circles' },
   { text: 'Hope is the thing with feathers.', lang: 'en', author: 'Emily Dickinson', source: 'Poem 254' },
   { text: 'Success is counted sweetest by those who ne’er succeed.', lang: 'en', author: 'Emily Dickinson', source: 'Poem 112' },
-  { text: 'The future is no more uncertain than the present.', lang: 'en', author: 'Walt Whitman', source: 'Leaves of Grass' },
+  { text: 'The future is no more uncertain than the present.', lang: 'en', author: 'Walt Whitman', source: 'Song of the Broad-Axe' },
 ];
 
 export function selectQuoteIndex(
