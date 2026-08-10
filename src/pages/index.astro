@@ -1,70 +1,146 @@
 ---
 import { getCollection } from 'astro:content';
+import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { site } from '../config/site';
+import planetHero from '../assets/celestial/planet-hero.png';
+import { quotes } from '../config/quotes';
 import { formatDate, getLatestProjectCategories, sortByDateDesc } from '../lib/content';
 import { withBase } from '../lib/urls';
 
 const allProjects = await getCollection('projects');
 const projects = sortByDateDesc(allProjects.filter((project) => project.data.featured)).slice(0, 3);
 const orbitCategories = getLatestProjectCategories(allProjects);
-const orbitPositions = ['node-a', 'node-b', 'node-c', 'node-d'];
 const posts = sortByDateDesc((await getCollection('posts')).filter((post) => !post.data.draft)).slice(0, 3);
 const baseUrl = withBase();
+const fallbackQuote = quotes[0];
+const orbitNodes = [
+  { x: 300, y: 130 },
+  { x: 655, y: 92 },
+  { x: 720, y: 310 },
+  { x: 420, y: 350 },
+];
 ---
 <BaseLayout>
-  <section class="shell hero">
-    <div>
-      <h1>{site.intro}</h1>
-      <p>{site.bio}</p>
-      <div class="actions">
-        <a class="button" href={withBase('projects')}>浏览项目 <span class="arrow">→</span></a>
-        <a class="text-link" href={withBase('posts')}>阅读文章 <span class="arrow">→</span></a>
-      </div>
+  <section class="home-hero">
+    <div class="home-hero__media" aria-hidden="true" data-planet-parallax>
+      <Image src={planetHero} alt="" widths={[960, 1440, 1920]} sizes="100vw" format="webp" quality={84} loading="eager" />
+      <svg class="hero-orbit" viewBox="0 0 900 470" focusable="false">
+        <path d="M58 370C195 70 665 24 852 215" />
+        <path d="M120 410C345 130 746 124 840 328" />
+        <circle cx="215" cy="214" r="4" class="orbit-dot--light" />
+        <circle cx="777" cy="171" r="4" class="orbit-dot--accent" />
+        {orbitCategories.map((category, index) => {
+          const position = orbitNodes[index];
+          return (
+            <a class="orbit-node" href={`${withBase('projects')}?category=${encodeURIComponent(category)}`} aria-label={`查看 ${category} 分类项目`}>
+              <circle cx={position.x} cy={position.y} r="5" />
+              <text x={position.x + 13} y={position.y + 4} class="orbit-label">{category}</text>
+            </a>
+          );
+        })}
+      </svg>
     </div>
-    <div class="orbit" aria-label="项目轨迹图">
-      <div class="orbit-center">作品<br />轨迹</div>
-      {orbitCategories.map((category, index) => (
-        <a
-          class={`orbit-node ${orbitPositions[index]}`}
-          href={`${withBase('projects')}?category=${encodeURIComponent(category)}`}
-          aria-label={`查看 ${category} 分类项目`}
+    <div class="shell home-hero__inner">
+      <div class="home-hero__copy" data-reveal>
+        <h1>TO THINK,<br />TO DO</h1>
+        <figure
+          class="hero-quote"
+          id="hero-quote"
+          lang={fallbackQuote.lang}
+          data-quotes={JSON.stringify(quotes)}
         >
-          {category}
-        </a>
-      ))}
+          <blockquote data-quote-text>{fallbackQuote.text}</blockquote>
+          <figcaption data-quote-source>— {fallbackQuote.author} · {fallbackQuote.source}</figcaption>
+        </figure>
+        <div class="actions">
+          <a class="button" href={withBase('projects')}>浏览项目 <span class="arrow">→</span></a>
+          <a class="button button--ghost" href={withBase('posts')}>阅读文章 <span class="arrow">→</span></a>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="shell section home-grid">
-    <div>
-      <div class="section-title"><h2>项目探索</h2><a href={withBase('projects')}>查看全部 →</a></div>
-      <div class="filters" aria-label="项目预览类别"><span class="filter" aria-pressed="true">精选作品</span><a class="filter" href={withBase('projects')}>探索更多</a></div>
+  <section class="shell home-content">
+    <div class="home-panel" data-reveal>
+      <div class="section-heading"><h2>项目探索</h2><a href={withBase('projects')}>查看全部 →</a></div>
       {projects.map((project) => (
-        <article class="project-row">
-          <div><h3><a href={withBase(`projects/${project.id}`)}>{project.data.title}</a></h3><p>{project.data.summary}</p></div>
-          <span class="status">{project.data.status}</span>
-          <div class="row-icons"><a href={project.data.githubUrl} target="_blank" rel="noreferrer" aria-label={`打开 ${project.data.title} 的 GitHub`}>◉</a><a href={withBase(`projects/${project.id}`)} aria-label={`查看 ${project.data.title}`}>↗</a></div>
+        <article class="featured-project">
+          <div class="project-symbol" aria-hidden="true">&gt;_</div>
+          <div>
+            <h3><a href={withBase(`projects/${project.id}`)}>{project.data.title}</a></h3>
+            <p>{project.data.summary}</p>
+            <div class="stack-list">
+              {project.data.stack.map((item) => <span class="tag">{item}</span>)}
+              <span class="status">{project.data.status}</span>
+            </div>
+          </div>
+          <div class="row-icons">
+            <a href={project.data.githubUrl} target="_blank" rel="noreferrer" aria-label={`打开 ${project.data.title} 的 GitHub`}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.5 0-.24-.01-1.05-.01-1.9-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.28 2.75 1.05A9.28 9.28 0 0112 6.83c.85 0 1.71.12 2.51.35 1.91-1.33 2.75-1.05 2.75-1.05.55 1.42.2 2.47.1 2.73.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.93.68 1.88 0 1.36-.01 2.45-.01 2.79 0 .27.18.6.69.5A10.24 10.24 0 0022 12.23C22 6.58 17.52 2 12 2Z"/></svg>
+            </a>
+            <a href={withBase(`projects/${project.id}`)} aria-label={`查看 ${project.data.title}`}><span class="arrow">↗</span></a>
+          </div>
         </article>
       ))}
     </div>
-    <div>
-      <div class="section-title"><h2>最新文章</h2><a href={withBase('posts')}>查看全部 →</a></div>
-      {posts.map((post) => (
-        <article class="post-row">
-          <div><h3><a href={withBase(`posts/${post.id}`)}>{post.data.title}</a></h3><p>{post.data.description}</p></div>
-          <span class="meta">{formatDate(post.data.publishDate)}</span>
-        </article>
-      ))}
-      <p><a class="text-link" id="random-post" href={withBase('posts')}>随机探索 <span class="arrow">→</span></a></p>
+
+    <div class="home-panel" data-reveal>
+      <div class="section-heading"><h2>最新文章</h2><a href={withBase('posts')}>查看全部 →</a></div>
+      <div class="post-timeline">
+        {posts.map((post, index) => (
+          <article class="timeline-post">
+            <span class="timeline-index">{String(index + 1).padStart(2, '0')}</span>
+            <div>
+              <h3><a href={withBase(`posts/${post.id}`)}>{post.data.title}</a></h3>
+              <p>{post.data.description}</p>
+            </div>
+            <span class="meta">{formatDate(post.data.publishDate)}</span>
+          </article>
+        ))}
+      </div>
+      <p><a class="text-link" id="random-post" href={withBase('posts')} data-posts={JSON.stringify(posts.map((post) => post.id))} data-base={baseUrl}>随机探索 <span class="arrow">→</span></a></p>
     </div>
   </section>
 </BaseLayout>
-<script is:inline define:vars={{ postIds: posts.map((post) => post.id), base: baseUrl }}>
-  document.querySelector('#random-post')?.addEventListener('click', (event) => {
-    if (!postIds.length) return;
-    event.preventDefault();
-    const post = postIds[Math.floor(Math.random() * postIds.length)];
-    window.location.href = `${base}posts/${post}`;
-  });
+
+<script>
+  import { selectQuoteIndex, type Quote } from '../config/quotes';
+
+  function setupHomepage() {
+    const quoteElement = document.querySelector<HTMLElement>('#hero-quote');
+    if (quoteElement) {
+      try {
+        const quotePool = JSON.parse(quoteElement.dataset.quotes ?? '[]') as Quote[];
+        const storedIndex = Number(sessionStorage.getItem('home-quote-index'));
+        const previousIndex = Number.isInteger(storedIndex) ? storedIndex : null;
+        const index = selectQuoteIndex(quotePool.length, previousIndex);
+        const quote = quotePool[index];
+        if (quote) {
+          quoteElement.lang = quote.lang;
+          quoteElement.querySelector<HTMLElement>('[data-quote-text]')!.textContent = quote.text;
+          quoteElement.querySelector<HTMLElement>('[data-quote-source]')!.textContent = `— ${quote.author} · ${quote.source}`;
+          sessionStorage.setItem('home-quote-index', String(index));
+          quoteElement.classList.remove('is-changing');
+          requestAnimationFrame(() => quoteElement.classList.add('is-changing'));
+        }
+      } catch {
+        // Keep the server-rendered fallback quote when storage or JSON is unavailable.
+      }
+    }
+
+    const randomPost = document.querySelector<HTMLAnchorElement>('#random-post');
+    if (randomPost && randomPost.dataset.ready !== 'true') {
+      randomPost.dataset.ready = 'true';
+      randomPost.addEventListener('click', (event) => {
+        const postIds = JSON.parse(randomPost.dataset.posts ?? '[]') as string[];
+        if (!postIds.length) return;
+        event.preventDefault();
+        const post = postIds[Math.floor(Math.random() * postIds.length)];
+        window.location.href = `${randomPost.dataset.base ?? '/'}posts/${post}`;
+      });
+    }
+  }
+
+  document.addEventListener('astro:page-load', setupHomepage);
+  setupHomepage();
 </script>
