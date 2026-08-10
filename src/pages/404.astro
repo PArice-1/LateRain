@@ -1,4 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../lib/urls';
 ---
-<BaseLayout title="页面未找到 — LateRain"><section class="about"><h1>404</h1><p>这个页面还没有被放进作品集。</p><a class="button" href={import.meta.env.BASE_URL}>回到首页 <span class="arrow">→</span></a></section></BaseLayout>
+<BaseLayout title="页面未找到 — LateRain"><section class="about"><h1>404</h1><p>这个页面还没有被放进作品集。</p><a class="button" href={withBase()}>回到首页 <span class="arrow">→</span></a></section></BaseLayout>

@@ -3,9 +3,11 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { site } from '../config/site';
 import { formatDate, sortByDateDesc } from '../lib/content';
+import { withBase } from '../lib/urls';
 
 const projects = sortByDateDesc((await getCollection('projects')).filter((project) => project.data.featured)).slice(0, 3);
 const posts = sortByDateDesc((await getCollection('posts')).filter((post) => !post.data.draft)).slice(0, 3);
+const baseUrl = withBase();
 ---
 <BaseLayout>
   <section class="shell hero">
@@ -13,44 +15,44 @@ const posts = sortByDateDesc((await getCollection('posts')).filter((post) => !po
       <h1>{site.intro}</h1>
       <p>{site.bio}</p>
       <div class="actions">
-        <a class="button" href={`${import.meta.env.BASE_URL}projects`}>浏览项目 <span class="arrow">→</span></a>
-        <a class="text-link" href={`${import.meta.env.BASE_URL}posts`}>阅读文章 <span class="arrow">→</span></a>
+        <a class="button" href={withBase('projects')}>浏览项目 <span class="arrow">→</span></a>
+        <a class="text-link" href={withBase('posts')}>阅读文章 <span class="arrow">→</span></a>
       </div>
     </div>
     <div class="orbit" aria-label="项目轨迹图">
       <div class="orbit-center">作品<br />轨迹</div>
-      <a class="orbit-node node-a" href={`${import.meta.env.BASE_URL}projects`}>AI Agent</a>
-      <a class="orbit-node node-b" href={`${import.meta.env.BASE_URL}projects`}>Python</a>
-      <a class="orbit-node node-c" href={`${import.meta.env.BASE_URL}posts`}>技术文章</a>
-      <a class="orbit-node node-d" href={`${import.meta.env.BASE_URL}projects`}>实验项目</a>
+      <a class="orbit-node node-a" href={withBase('projects')}>AI Agent</a>
+      <a class="orbit-node node-b" href={withBase('projects')}>Python</a>
+      <a class="orbit-node node-c" href={withBase('posts')}>技术文章</a>
+      <a class="orbit-node node-d" href={withBase('projects')}>实验项目</a>
     </div>
   </section>
 
   <section class="shell section home-grid">
     <div>
-      <div class="section-title"><h2>项目探索</h2><a href={`${import.meta.env.BASE_URL}projects`}>查看全部 →</a></div>
-      <div class="filters" aria-label="项目预览类别"><span class="filter" aria-pressed="true">精选作品</span><a class="filter" href={`${import.meta.env.BASE_URL}projects`}>探索更多</a></div>
+      <div class="section-title"><h2>项目探索</h2><a href={withBase('projects')}>查看全部 →</a></div>
+      <div class="filters" aria-label="项目预览类别"><span class="filter" aria-pressed="true">精选作品</span><a class="filter" href={withBase('projects')}>探索更多</a></div>
       {projects.map((project) => (
         <article class="project-row">
-          <div><h3><a href={`${import.meta.env.BASE_URL}projects/${project.id}`}>{project.data.title}</a></h3><p>{project.data.summary}</p></div>
+          <div><h3><a href={withBase(`projects/${project.id}`)}>{project.data.title}</a></h3><p>{project.data.summary}</p></div>
           <span class="status">{project.data.status}</span>
-          <div class="row-icons"><a href={project.data.githubUrl} target="_blank" rel="noreferrer" aria-label={`打开 ${project.data.title} 的 GitHub`}>◉</a><a href={`${import.meta.env.BASE_URL}projects/${project.id}`} aria-label={`查看 ${project.data.title}`}>↗</a></div>
+          <div class="row-icons"><a href={project.data.githubUrl} target="_blank" rel="noreferrer" aria-label={`打开 ${project.data.title} 的 GitHub`}>◉</a><a href={withBase(`projects/${project.id}`)} aria-label={`查看 ${project.data.title}`}>↗</a></div>
         </article>
       ))}
     </div>
     <div>
-      <div class="section-title"><h2>最新文章</h2><a href={`${import.meta.env.BASE_URL}posts`}>查看全部 →</a></div>
+      <div class="section-title"><h2>最新文章</h2><a href={withBase('posts')}>查看全部 →</a></div>
       {posts.map((post) => (
         <article class="post-row">
-          <div><h3><a href={`${import.meta.env.BASE_URL}posts/${post.id}`}>{post.data.title}</a></h3><p>{post.data.description}</p></div>
+          <div><h3><a href={withBase(`posts/${post.id}`)}>{post.data.title}</a></h3><p>{post.data.description}</p></div>
           <span class="meta">{formatDate(post.data.publishDate)}</span>
         </article>
       ))}
-      <p><a class="text-link" id="random-post" href={`${import.meta.env.BASE_URL}posts`}>随机探索 <span class="arrow">→</span></a></p>
+      <p><a class="text-link" id="random-post" href={withBase('posts')}>随机探索 <span class="arrow">→</span></a></p>
     </div>
   </section>
 </BaseLayout>
-<script is:inline define:vars={{ postIds: posts.map((post) => post.id), base: import.meta.env.BASE_URL }}>
+<script is:inline define:vars={{ postIds: posts.map((post) => post.id), base: baseUrl }}>
   document.querySelector('#random-post')?.addEventListener('click', (event) => {
     if (!postIds.length) return;
     event.preventDefault();
