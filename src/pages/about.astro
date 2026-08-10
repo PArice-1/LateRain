@@ -2,4 +2,20 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { site } from '../config/site';
 ---
-<BaseLayout title="关于 — LateRain" description="关于这个个人项目博客。"><section class="about"><h1>关于这个空间</h1><p>这里是一个围绕作品与文字展开的个人站点。它不追求填满页面，只把值得保留的项目和想法整理清楚。</p><div class="about-grid"><section><h2>放什么</h2><p>项目的背景、实现取舍和代码入口；以及写作过程中沉淀下来的文章。</p></section><section><h2>怎么维护</h2><p>项目和文章都保存在 Markdown 文件中。新增一个文件、填写信息、提交到 GitHub，网站就会自动更新。</p></section></div><p><a class="button" href={site.githubUrl} target="_blank" rel="noreferrer">访问 GitHub <span class="arrow">↗</span></a></p></section></BaseLayout>
+<BaseLayout title="关于 — LateRain" description="关于这个个人项目博客。">
+  <section class="about" data-reveal>
+    <h1>关于这个空间</h1>
+    <p>这里是一个围绕作品与文字展开的个人站点。它不追求填满页面，只把值得保留的项目和想法整理清楚。</p>
+    <div class="about-grid">
+      <section>
+        <h2>放什么</h2>
+        <p>项目的背景、实现取舍和代码入口；以及写作过程中沉淀下来的文章。</p>
+      </section>
+      <section>
+        <h2>怎么维护</h2>
+        <p>项目和文章都保存在 Markdown 文件中。新增一个文件、填写信息、提交到 GitHub，网站就会自动更新。</p>
+      </section>
+    </div>
+    <p><a class="button" href={site.githubUrl} target="_blank" rel="noreferrer">访问 GitHub <span class="arrow">↗</span></a></p>
+  </section>
+</BaseLayout>

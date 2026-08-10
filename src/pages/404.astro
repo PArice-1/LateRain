@@ -2,4 +2,11 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../lib/urls';
 ---
-<BaseLayout title="页面未找到 — LateRain"><section class="about"><h1>404</h1><p>这个页面还没有被放进作品集。</p><a class="button" href={withBase()}>回到首页 <span class="arrow">→</span></a></section></BaseLayout>
+<BaseLayout title="页面未找到 — LateRain">
+  <section class="about not-found" data-reveal>
+    <span class="error-code">ERROR · 404</span>
+    <h1>这颗星球<br />尚未被发现。</h1>
+    <p>你访问的页面不存在，或者已经移动到新的轨道。</p>
+    <p><a class="button" href={withBase()}>回到首页 <span class="arrow">→</span></a></p>
+  </section>
+</BaseLayout>
