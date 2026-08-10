@@ -1,0 +1,30 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { formatDate, getRelatedPosts, readingMinutes, sortByDateDesc } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const posts = (await getCollection('posts')).filter((post) => !post.data.draft);
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post, posts: sortByDateDesc(posts) } }));
+}
+const { post, posts } = Astro.props;
+const { Content, headings } = await render(post);
+const position = posts.findIndex((item) => item.id === post.id);
+const previous = posts[position + 1];
+const next = posts[position - 1];
+const related = getRelatedPosts(posts, post);
+---
+<BaseLayout title={`${post.data.title} — LateRain`} description={post.data.description}>
+  <div class="progress" id="reading-progress"></div>
+  <article class="article"><header class="article-header"><div class="tag-list">{post.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div><h1>{post.data.title}</h1><p class="lead">{post.data.description}</p><p class="meta">{formatDate(post.data.publishDate)} · {readingMinutes(post.body ?? '')} 分钟阅读</p></header>
+    {headings.length > 0 && <nav class="tag-list" aria-label="文章目录">{headings.filter((heading) => heading.depth <= 2).map((heading) => <a class="tag" href={`#${heading.slug}`}>{heading.text}</a>)}</nav>}
+    <div class="prose"><Content /></div>
+    {related.length > 0 && <section class="section"><div class="section-title"><h2>继续阅读</h2></div>{related.map((item) => <p><a class="text-link" href={`${import.meta.env.BASE_URL}posts/${item.id}`}>{item.data.title} <span class="arrow">→</span></a></p>)}</section>}
+    <nav class="article-nav" aria-label="文章翻页"><span>{previous && <a class="text-link" href={`${import.meta.env.BASE_URL}posts/${previous.id}`}>← {previous.data.title}</a>}</span><span>{next && <a class="text-link" href={`${import.meta.env.BASE_URL}posts/${next.id}`}>{next.data.title} →</a>}</span></nav>
+  </article>
+</BaseLayout>
+<script>
+  const bar = document.querySelector<HTMLElement>('#reading-progress');
+  const updateProgress = () => { const scrollable = document.documentElement.scrollHeight - window.innerHeight; if (bar) bar.style.width = `${scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0}%`; };
+  updateProgress(); window.addEventListener('scroll', updateProgress, { passive: true });
+</script>

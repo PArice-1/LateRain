@@ -1,0 +1,38 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { sortByDateDesc } from '../../lib/content';
+
+const projects = sortByDateDesc(await getCollection('projects'));
+const categories = ['全部', ...new Set(projects.map((project) => project.data.category))];
+---
+<BaseLayout title="项目 — LateRain" description="个人项目与作品档案。">
+  <section class="shell page-intro"><h1>项目</h1><p>每个项目都有清楚的缘起、实现和可继续探索的代码入口。</p></section>
+  <section class="shell content-list">
+    <div class="filters" aria-label="按类别筛选项目">
+      {categories.map((category, index) => <button class="filter" type="button" data-filter={category} aria-pressed={index === 0 ? 'true' : 'false'}>{category}</button>)}
+    </div>
+    <div id="project-list">
+      {projects.map((project) => (
+        <article class="project-row" data-category={project.data.category}>
+          <div><h3><a href={`${import.meta.env.BASE_URL}projects/${project.id}`}>{project.data.title}</a></h3><p>{project.data.summary}</p><div class="stack-list">{project.data.stack.map((item) => <span class="tag">{item}</span>)}</div></div>
+          <span class="status">{project.data.status}</span>
+          <div class="row-icons"><a href={project.data.githubUrl} target="_blank" rel="noreferrer" aria-label={`打开 ${project.data.title} GitHub`}>◉</a><a href={`${import.meta.env.BASE_URL}projects/${project.id}`} aria-label={`查看 ${project.data.title}`}>↗</a></div>
+        </article>
+      ))}
+    </div>
+    <p id="empty-projects" class="empty" hidden>该分类下暂时还没有项目。</p>
+  </section>
+</BaseLayout>
+<script>
+  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+  const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-category]'));
+  const empty = document.querySelector<HTMLElement>('#empty-projects');
+  buttons.forEach((button) => button.addEventListener('click', () => {
+    const category = button.dataset.filter;
+    let visible = 0;
+    rows.forEach((row) => { const matches = category === '全部' || row.dataset.category === category; row.hidden = !matches; if (matches) visible += 1; });
+    buttons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+    if (empty) empty.hidden = visible !== 0;
+  }));
+</script>
