@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import ArchiveHero from '../../components/ArchiveHero.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { sortByDateDesc } from '../../lib/content';
 import { withBase } from '../../lib/urls';
@@ -8,49 +9,95 @@ const projects = sortByDateDesc(await getCollection('projects'));
 const categories = ['全部', ...new Set(projects.map((project) => project.data.category))];
 ---
 <BaseLayout title="项目 — LateRain" description="个人项目与作品档案。">
-  <section class="shell page-intro"><h1>项目</h1><p>每个项目都有清楚的缘起、实现和可继续探索的代码入口。</p></section>
-  <section class="shell content-list">
+  <ArchiveHero title="项目" description="每个项目都有清楚的缘起、实现和可继续探索的代码入口。">
     <div class="filters" aria-label="按类别筛选项目">
-      {categories.map((category, index) => <button class="filter" type="button" data-filter={category} aria-pressed={index === 0 ? 'true' : 'false'}>{category}</button>)}
-    </div>
-    <div id="project-list">
-      {projects.map((project) => (
-        <article class="project-row" data-category={project.data.category}>
-          <div><h3><a href={withBase(`projects/${project.id}`)}>{project.data.title}</a></h3><p>{project.data.summary}</p><div class="stack-list">{project.data.stack.map((item) => <span class="tag">{item}</span>)}</div></div>
-          <span class="status">{project.data.status}</span>
-          <div class="row-icons"><a href={project.data.githubUrl} target="_blank" rel="noreferrer" aria-label={`打开 ${project.data.title} GitHub`}>◉</a><a href={withBase(`projects/${project.id}`)} aria-label={`查看 ${project.data.title}`}>↗</a></div>
-        </article>
+      {categories.map((category, index) => (
+        <button class="filter" type="button" data-filter={category} aria-pressed={index === 0 ? 'true' : 'false'}>{category}</button>
       ))}
     </div>
+  </ArchiveHero>
+
+  <section class="shell archive-list" id="project-list" aria-live="polite">
+    {projects.map((project, index) => (
+      <article class="project-archive-row" data-category={project.data.category} data-reveal>
+        <div class="archive-index">
+          <strong>{String(index + 1).padStart(2, '0')}</strong>
+          <span>{project.data.publishDate.getFullYear()}</span>
+        </div>
+        <div class="project-archive-main">
+          <h2><a href={withBase(`projects/${project.id}`)}>{project.data.title}</a></h2>
+          <p>{project.data.summary}</p>
+          <div class="stack-list">
+            {project.data.stack.map((item) => <span class="tag">{item}</span>)}
+            <span class="status">{project.data.status}</span>
+          </div>
+        </div>
+        <div class="project-archive-actions">
+          <a class="button button--ghost" href={withBase(`projects/${project.id}`)}>查看项目 <span class="arrow">→</span></a>
+          <a class="github-mark" href={project.data.githubUrl} target="_blank" rel="noreferrer" aria-label={`打开 ${project.data.title} GitHub`}>
+            <svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.5 0-.24-.01-1.05-.01-1.9-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.28 2.75 1.05A9.28 9.28 0 0112 6.83c.85 0 1.71.12 2.51.35 1.91-1.33 2.75-1.05 2.75-1.05.55 1.42.2 2.47.1 2.73.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.93.68 1.88 0 1.36-.01 2.45-.01 2.79 0 .27.18.6.69.5A10.24 10.24 0 0022 12.23C22 6.58 17.52 2 12 2Z"/></svg>
+          </a>
+        </div>
+      </article>
+    ))}
     <p id="empty-projects" class="empty" hidden>该分类下暂时还没有项目。</p>
   </section>
 </BaseLayout>
+
 <script>
   import { resolveProjectCategory } from '../../lib/content';
 
-  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
-  const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-category]'));
-  const empty = document.querySelector<HTMLElement>('#empty-projects');
-  const categories = buttons.map((button) => button.dataset.filter).filter((category): category is string => Boolean(category));
+  function setupProjectFilters() {
+    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-category]'));
+    const list = document.querySelector<HTMLElement>('#project-list');
+    const empty = document.querySelector<HTMLElement>('#empty-projects');
+    if (!buttons.length || !list || list.dataset.ready === 'true') return;
 
-  const applyCategory = (category: string, updateUrl: boolean) => {
-    let visible = 0;
-    rows.forEach((row) => { const matches = category === '全部' || row.dataset.category === category; row.hidden = !matches; if (matches) visible += 1; });
-    buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.filter === category)));
-    if (empty) empty.hidden = visible !== 0;
+    const categories = buttons.map((button) => button.dataset.filter).filter((category): category is string => Boolean(category));
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (updateUrl) {
-      const url = new URL(window.location.href);
-      if (category === '全部') url.searchParams.delete('category');
-      else url.searchParams.set('category', category);
-      window.history.replaceState(null, '', url);
-    }
-  };
+    const applyCategory = async (category: string, updateUrl: boolean, animate = true) => {
+      list.classList.add('is-filtering');
+      const matches = rows.filter((row) => category === '全部' || row.dataset.category === category);
+      const hiddenRows = rows.filter((row) => !matches.includes(row) && !row.hidden);
 
-  buttons.forEach((button) => button.addEventListener('click', () => {
-    applyCategory(resolveProjectCategory(button.dataset.filter ?? null, categories), true);
-  }));
+      if (animate && !reducedMotion) {
+        await Promise.all(hiddenRows.map((row) => row.animate(
+          [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(12px)' }],
+          { duration: 180, easing: 'ease-in', fill: 'forwards' },
+        ).finished));
+      }
 
-  const requestedCategory = new URLSearchParams(window.location.search).get('category');
-  applyCategory(resolveProjectCategory(requestedCategory, categories), false);
+      rows.forEach((row) => row.hidden = !matches.includes(row));
+      matches.forEach((row) => {
+        row.getAnimations().forEach((animation) => animation.cancel());
+        if (animate && !reducedMotion) row.animate(
+          [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'translateY(0)' }],
+          { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' },
+        );
+      });
+      buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.filter === category)));
+      if (empty) empty.hidden = matches.length !== 0;
+
+      if (updateUrl) {
+        const url = new URL(window.location.href);
+        if (category === '全部') url.searchParams.delete('category');
+        else url.searchParams.set('category', category);
+        window.history.replaceState(null, '', url);
+      }
+      list.classList.remove('is-filtering');
+    };
+
+    buttons.forEach((button) => button.addEventListener('click', () => {
+      void applyCategory(resolveProjectCategory(button.dataset.filter ?? null, categories), true);
+    }));
+    list.dataset.ready = 'true';
+
+    const requestedCategory = new URLSearchParams(window.location.search).get('category');
+    void applyCategory(resolveProjectCategory(requestedCategory, categories), false, false);
+  }
+
+  document.addEventListener('astro:page-load', setupProjectFilters);
+  setupProjectFilters();
 </script>
