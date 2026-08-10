@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getRelatedPosts, readingMinutes, sortByDateDesc } from '../src/lib/content';
+import {
+  getLatestProjectCategories,
+  getRelatedPosts,
+  readingMinutes,
+  resolveProjectCategory,
+  sortByDateDesc,
+} from '../src/lib/content';
 
 describe('content helpers', () => {
   it('calculates at least one minute of reading time', () => {
@@ -29,5 +35,30 @@ describe('content helpers', () => {
     ];
 
     expect(getRelatedPosts(posts, posts[0], 2).map((post) => post.id)).toEqual(['match', 'other']);
+  });
+
+  it('lists unique project categories by their newest project and limits the result', () => {
+    const projects = [
+      { data: { category: 'Agent', publishDate: new Date('2025-01-01') } },
+      { data: { category: 'Web', publishDate: new Date('2025-06-01') } },
+      { data: { category: 'Agent', publishDate: new Date('2025-07-01') } },
+      { data: { category: 'Tools', publishDate: new Date('2025-05-01') } },
+      { data: { category: 'Embedded', publishDate: new Date('2025-04-01') } },
+      { data: { category: 'Other', publishDate: new Date('2025-03-01') } },
+    ];
+
+    expect(getLatestProjectCategories(projects)).toEqual(['Agent', 'Web', 'Tools', 'Embedded']);
+  });
+
+  it('returns no project categories when there are no projects', () => {
+    expect(getLatestProjectCategories([])).toEqual([]);
+  });
+
+  it('falls back to all projects when a requested category is unavailable', () => {
+    const categories = ['Agent', 'Tools'];
+
+    expect(resolveProjectCategory('Agent', categories)).toBe('Agent');
+    expect(resolveProjectCategory('Unknown', categories)).toBe('全部');
+    expect(resolveProjectCategory(null, categories)).toBe('全部');
   });
 });

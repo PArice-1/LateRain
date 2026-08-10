@@ -2,10 +2,13 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { site } from '../config/site';
-import { formatDate, sortByDateDesc } from '../lib/content';
+import { formatDate, getLatestProjectCategories, sortByDateDesc } from '../lib/content';
 import { withBase } from '../lib/urls';
 
-const projects = sortByDateDesc((await getCollection('projects')).filter((project) => project.data.featured)).slice(0, 3);
+const allProjects = await getCollection('projects');
+const projects = sortByDateDesc(allProjects.filter((project) => project.data.featured)).slice(0, 3);
+const orbitCategories = getLatestProjectCategories(allProjects);
+const orbitPositions = ['node-a', 'node-b', 'node-c', 'node-d'];
 const posts = sortByDateDesc((await getCollection('posts')).filter((post) => !post.data.draft)).slice(0, 3);
 const baseUrl = withBase();
 ---
@@ -21,10 +24,15 @@ const baseUrl = withBase();
     </div>
     <div class="orbit" aria-label="项目轨迹图">
       <div class="orbit-center">作品<br />轨迹</div>
-      <a class="orbit-node node-a" href={withBase('projects')}>AI Agent</a>
-      <a class="orbit-node node-b" href={withBase('projects')}>Python</a>
-      <a class="orbit-node node-c" href={withBase('posts')}>技术文章</a>
-      <a class="orbit-node node-d" href={withBase('projects')}>实验项目</a>
+      {orbitCategories.map((category, index) => (
+        <a
+          class={`orbit-node ${orbitPositions[index]}`}
+          href={`${withBase('projects')}?category=${encodeURIComponent(category)}`}
+          aria-label={`查看 ${category} 分类项目`}
+        >
+          {category}
+        </a>
+      ))}
     </div>
   </section>
 

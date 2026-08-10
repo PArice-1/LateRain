@@ -1,5 +1,6 @@
 type DatedEntry = { data: { publishDate: Date } };
 type TaggedEntry = { id: string; data: { tags: string[] } };
+type CategorizedEntry = { data: { category: string; publishDate: Date } };
 
 export function readingMinutes(body: string, wordsPerMinute = 200): number {
   const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
@@ -10,6 +11,14 @@ export function sortByDateDesc<T extends DatedEntry>(entries: T[]): T[] {
   return [...entries].sort(
     (left, right) => right.data.publishDate.getTime() - left.data.publishDate.getTime(),
   );
+}
+
+export function getLatestProjectCategories<T extends CategorizedEntry>(entries: T[], limit = 4): string[] {
+  return [...new Set(sortByDateDesc(entries).map((entry) => entry.data.category))].slice(0, limit);
+}
+
+export function resolveProjectCategory(requestedCategory: string | null, categories: string[]): string {
+  return requestedCategory && categories.includes(requestedCategory) ? requestedCategory : '全部';
 }
 
 export function getRelatedPosts<T extends TaggedEntry>(posts: T[], current: T, limit = 2): T[] {

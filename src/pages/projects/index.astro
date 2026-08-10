@@ -26,14 +26,31 @@ const categories = ['全部', ...new Set(projects.map((project) => project.data.
   </section>
 </BaseLayout>
 <script>
+  import { resolveProjectCategory } from '../../lib/content';
+
   const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
   const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-category]'));
   const empty = document.querySelector<HTMLElement>('#empty-projects');
-  buttons.forEach((button) => button.addEventListener('click', () => {
-    const category = button.dataset.filter;
+  const categories = buttons.map((button) => button.dataset.filter).filter((category): category is string => Boolean(category));
+
+  const applyCategory = (category: string, updateUrl: boolean) => {
     let visible = 0;
     rows.forEach((row) => { const matches = category === '全部' || row.dataset.category === category; row.hidden = !matches; if (matches) visible += 1; });
-    buttons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+    buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.filter === category)));
     if (empty) empty.hidden = visible !== 0;
+
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      if (category === '全部') url.searchParams.delete('category');
+      else url.searchParams.set('category', category);
+      window.history.replaceState(null, '', url);
+    }
+  };
+
+  buttons.forEach((button) => button.addEventListener('click', () => {
+    applyCategory(resolveProjectCategory(button.dataset.filter ?? null, categories), true);
   }));
+
+  const requestedCategory = new URLSearchParams(window.location.search).get('category');
+  applyCategory(resolveProjectCategory(requestedCategory, categories), false);
 </script>
