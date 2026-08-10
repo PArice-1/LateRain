@@ -4,41 +4,19 @@ import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import planetHero from '../assets/celestial/planet-hero.png';
 import { quotes } from '../config/quotes';
-import { formatDate, getLatestProjectCategories, sortByDateDesc } from '../lib/content';
+import { formatDate, sortByDateDesc } from '../lib/content';
 import { withBase } from '../lib/urls';
 
 const allProjects = await getCollection('projects');
 const projects = sortByDateDesc(allProjects.filter((project) => project.data.featured)).slice(0, 3);
-const orbitCategories = getLatestProjectCategories(allProjects);
 const posts = sortByDateDesc((await getCollection('posts')).filter((post) => !post.data.draft)).slice(0, 3);
 const fallbackQuote = quotes[0];
 const randomPostUrls = posts.map((post) => withBase(`posts/${post.id}`));
-const orbitNodes = [
-  { x: 300, y: 130 },
-  { x: 655, y: 92 },
-  { x: 720, y: 310 },
-  { x: 420, y: 350 },
-];
 ---
 <BaseLayout>
   <section class="home-hero">
     <div class="home-hero__media" aria-hidden="true" data-planet-parallax>
       <Image src={planetHero} alt="" widths={[960, 1440, 1920]} sizes="100vw" format="webp" quality={84} loading="eager" />
-      <svg class="hero-orbit" viewBox="0 0 900 470" focusable="false">
-        <path d="M58 370C195 70 665 24 852 215" />
-        <path d="M120 410C345 130 746 124 840 328" />
-        <circle cx="215" cy="214" r="4" class="orbit-dot--light" />
-        <circle cx="777" cy="171" r="4" class="orbit-dot--accent" />
-        {orbitCategories.map((category, index) => {
-          const position = orbitNodes[index];
-          return (
-            <a class="orbit-node" href={`${withBase('projects')}?category=${encodeURIComponent(category)}`} aria-label={`查看 ${category} 分类项目`}>
-              <circle cx={position.x} cy={position.y} r="5" />
-              <text x={position.x + 13} y={position.y + 4} class="orbit-label">{category}</text>
-            </a>
-          );
-        })}
-      </svg>
     </div>
     <div class="shell home-hero__inner">
       <div class="home-hero__copy" data-reveal>

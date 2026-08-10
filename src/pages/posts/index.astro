@@ -37,6 +37,7 @@ const tags = [...new Set(posts.flatMap((post) => post.data.tags))];
 
 <script>
   import { resolvePostTag } from '../../lib/content';
+  import { getFilterMotionTiming } from '../../lib/ui';
 
   function setupPostFilters() {
     const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tag]'));
@@ -47,29 +48,15 @@ const tags = [...new Set(posts.flatMap((post) => post.data.tags))];
 
     const tags = buttons.map((button) => button.dataset.tag).filter((tag): tag is string => Boolean(tag));
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const motion = getFilterMotionTiming(reducedMotion);
+    let transitionSequence = 0;
 
     const applyTag = async (tag: string, updateUrl: boolean, animate = true) => {
+      const sequence = ++transitionSequence;
+      list.getAnimations().forEach((animation) => animation.cancel());
       list.classList.add('is-filtering');
       const matches = rows.filter((row) => tag === '全部' || row.dataset.tags?.split('|').includes(tag));
-      const hiddenRows = rows.filter((row) => !matches.includes(row) && !row.hidden);
-
-      if (animate && !reducedMotion) {
-        await Promise.all(hiddenRows.map((row) => row.animate(
-          [{ opacity: 1, transform: 'translateX(0)' }, { opacity: 0, transform: 'translateX(-12px)' }],
-          { duration: 180, easing: 'ease-in', fill: 'forwards' },
-        ).finished));
-      }
-
-      rows.forEach((row) => row.hidden = !matches.includes(row));
-      matches.forEach((row) => {
-        row.getAnimations().forEach((animation) => animation.cancel());
-        if (animate && !reducedMotion) row.animate(
-          [{ opacity: 0, transform: 'translateX(12px)' }, { opacity: 1, transform: 'translateX(0)' }],
-          { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' },
-        );
-      });
       buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.tag === tag)));
-      if (empty) empty.hidden = matches.length !== 0;
 
       if (updateUrl) {
         const url = new URL(window.location.href);
@@ -77,7 +64,34 @@ const tags = [...new Set(posts.flatMap((post) => post.data.tags))];
         else url.searchParams.set('tag', tag);
         window.history.replaceState(null, '', url);
       }
-      list.classList.remove('is-filtering');
+
+      if (animate && motion.exit > 0) {
+        try {
+          await list.animate(
+            [{ opacity: 1, transform: 'translateY(0)' }, { opacity: .28, transform: `translateY(${motion.distance}px)` }],
+            { duration: motion.exit, easing: 'ease-out', fill: 'forwards' },
+          ).finished;
+        } catch {
+          // A newer filter selection cancelled this transition.
+        }
+      }
+      if (sequence !== transitionSequence) return;
+
+      rows.forEach((row) => row.hidden = !matches.includes(row));
+      if (empty) empty.hidden = matches.length !== 0;
+      list.getAnimations().forEach((animation) => animation.cancel());
+
+      if (animate && motion.enter > 0) {
+        try {
+          await list.animate(
+            [{ opacity: 0, transform: `translateY(${motion.distance}px)` }, { opacity: 1, transform: 'translateY(0)' }],
+            { duration: motion.enter, easing: 'cubic-bezier(.22,1,.36,1)' },
+          ).finished;
+        } catch {
+          // A newer filter selection cancelled this transition.
+        }
+      }
+      if (sequence === transitionSequence) list.classList.remove('is-filtering');
     };
 
     buttons.forEach((button) => button.addEventListener('click', () => {
