@@ -214,9 +214,10 @@ a:hover .arrow { transform: translateX(4px); }
 .empty { color: var(--muted); padding: 42px 0; }
 
 .article-shell { position: relative; display: grid; grid-template-columns: 230px minmax(0, var(--reading)) minmax(180px, 1fr); gap: 54px; width: min(var(--max), calc(100% - 80px)); margin: 0 auto; padding: 56px 0 90px; }
-.article-cosmos { position: absolute; z-index: -1; top: -130px; right: -12vw; width: 68vw; height: 480px; opacity: .42; mask-image: linear-gradient(to bottom, #000 56%, transparent); }
+.article-cosmos { position: absolute; z-index: 0; top: -130px; right: -12vw; width: 68vw; height: 480px; opacity: .42; pointer-events: none; mask-image: linear-gradient(to bottom, #000 56%, transparent); }
 .article-cosmos img { width: 100%; height: 100%; object-fit: cover; object-position: right center; }
 :root[data-theme='light'] .article-cosmos { opacity: .12; filter: grayscale(.4); }
+.article-toc, .article, .article-related { z-index: 1; }
 .article-toc { position: sticky; top: calc(var(--header-height) + 42px); align-self: start; padding: 12px 30px 16px 0; border-right: 1px solid var(--line); }
 .article-toc h2 { margin: 0 0 20px; font: 500 1rem var(--display); letter-spacing: .08em; }
 .article-toc a { position: relative; display: block; padding: 8px 0 8px 20px; color: var(--muted); font-size: .78rem; line-height: 1.45; transition: color .2s ease; }

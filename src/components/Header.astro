@@ -21,9 +21,15 @@ import { withBase } from '../lib/urls';
   </div>
 </header>
 <script>
-  import { nextTheme, type Theme } from '../lib/ui';
+  import { nextTheme, resolveInitialTheme, type Theme } from '../lib/ui';
 
   const syncThemeControl = () => {
+    try {
+      document.documentElement.dataset.theme = resolveInitialTheme(localStorage.getItem('theme'));
+    } catch {
+      document.documentElement.dataset.theme = 'dark';
+    }
+
     const button = document.querySelector<HTMLButtonElement>('#theme-toggle');
     if (!button || button.dataset.ready === 'true') return;
 
